@@ -1,0 +1,17 @@
+{
+  "name": "demo-app",
+  "version": "1.0.0",
+  "description": "Demo Node.js app exporting Prometheus metrics",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "prom-client": "^14.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}

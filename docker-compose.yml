@@ -1,0 +1,51 @@
+services:
+  app:
+    build: ./app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/usr/src/app
+    command: npm run dev
+    networks:
+      - demo-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    networks:
+      - demo-net
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - demo-net
+
+  k6:
+    image: grafana/k6:latest
+    volumes:
+      - ./load:/scripts
+    entrypoint: ["k6", "run", "/scripts/load.js"]
+    environment:
+      - K6_LOG_LEVEL=error
+    networks:
+      - demo-net
+    depends_on:
+      - app
+
+networks:
+  demo-net:
+    driver: bridge
