@@ -1,2 +1,3 @@
 node_modules
 prometheus/data
+app/demo-app.log
