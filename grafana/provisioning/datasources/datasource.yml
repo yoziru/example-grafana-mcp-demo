@@ -3,6 +3,34 @@ apiVersion: 1
 datasources:
   - name: Prometheus
     type: prometheus
+    uid: prometheus
     access: proxy
     url: http://prometheus:9090
     isDefault: true
+  - name: Tempo
+    type: tempo
+    access: proxy
+    orgId: 1
+    url: http://tempo:3200
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    apiVersion: 1
+    uid: tempo
+    jsonData:
+      httpMethod: GET
+      serviceMap:
+        datasourceUid: prometheus
+      tracesToMetrics:
+        datasourceUid: prometheus
+        tags:
+          - key: service.name
+            value: server
+        queries:
+          - name: Request rate
+            query: sum by (client, server) (rate(traces_service_graph_request_total{$$__tags}[$$__rate_interval]))
+          - name: Error rate
+            query: sum by (client, server) (rate(traces_service_graph_request_failed_total{$$__tags}[$$__rate_interval]))
+      tracesToLogs:
+        datasourceUid: "loki"

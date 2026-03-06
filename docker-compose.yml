@@ -2,10 +2,14 @@ services:
   app:
     build: ./app
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
       - ./app:/usr/src/app
     command: sh -c "npm install && npm run dev"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+    depends_on:
+      - alloy
     networks:
       - demo-net
 
@@ -16,17 +20,23 @@ services:
       - ./prometheus/data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --enable-feature=native-histograms
     ports:
       - "9090:9090"
     networks:
       - demo-net
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.3.3@sha256:9e1e77ade304069aee3196e9a4f210830e96e80ce9a2640891eccc324b152faf
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor metricsSummary
     ports:
-      - "3001:3000"
+      - "3000:3000"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
@@ -45,6 +55,56 @@ services:
       - demo-net
     depends_on:
       - app
+
+  # Tempo runs as user 10001, and docker compose creates the volume as root.
+  # As such, we need to chown the volume in order for Tempo to start correctly.
+  init:
+    image: busybox:latest
+    user: root
+    entrypoint:
+      - "chown"
+      - "10001:10001"
+      - "/var/tempo"
+    volumes:
+      - ./tempo/tempo-data:/var/tempo
+    networks:
+      - demo-net
+
+  tempo:
+    image: grafana/tempo:2.10.1
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml
+      - ./tempo/tempo-data:/var/tempo
+    ports:
+      - "3200:3200" # Tempo API + MCP server at http://localhost:3200/api/mcp
+      - "4317:4317" # OTLP gRPC
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+    depends_on:
+      - init
+    networks:
+      - demo-net
+
+  # And put them in a Grafana Alloy pipeline...
+  alloy:
+    image: grafana/alloy:v1.12.1@sha256:c311595156fca7b1131683d383dae1acfd29e8879d347161d2a6f714ebac0c0b
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+    environment:
+      - ALLOY_OTLP_UPSTREAM=tempo:4317
+    ports:
+      - "12345:12345"
+      - "4319:4317"
+    depends_on:
+      - tempo
+    networks:
+      - demo-net
 
 networks:
   demo-net:

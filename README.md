@@ -43,7 +43,7 @@ This will create a Grafana service account and output a token.
 
 - Install the [mcp-grafana](https://github.com/grafana/mcp-grafana) extension or agent in your IDE.
 - Configure it to connect to your local Grafana instance:
-  - **GRAFANA_URL:** `http://localhost:3001`
+  - **GRAFANA_URL:** `http://localhost:3000`
   - **GRAFANA_API_KEY:** (the token you generated above)
 
 ### 4. Enable the MCP Server
@@ -83,4 +83,5 @@ This demonstrates how you can make code changes and update your observability pr
 - `app/` – Node.js demo app (runs on port 3000)
 - `prometheus/` – Prometheus config and data
 - `grafana/` – Grafana provisioning (datasources, etc.)
+- `tempo/` – Tempo config (MCP server enabled at `/api/mcp`)
 - `load/` – k6 load test scripts

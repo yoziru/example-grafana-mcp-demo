@@ -4,10 +4,12 @@
   "description": "Demo Node.js app exporting Prometheus metrics",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node --require @opentelemetry/auto-instrumentations-node/register index.js",
+    "dev": "nodemon --exec \"node --require @opentelemetry/auto-instrumentations-node/register index.js\""
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.52.0",
     "express": "^4.18.2",
     "prom-client": "^14.1.1"
   },

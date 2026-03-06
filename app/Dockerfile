@@ -3,6 +3,8 @@ FROM node:lts-alpine
 
 WORKDIR /usr/src/app
 
+ENV OTEL_SERVICE_NAME=demo-app
+
 COPY package.json package-lock.json* ./
 RUN npm install
 
